@@ -164,7 +164,7 @@ def GlueApp(app: gj.JupyterApplication):
     use_glue_watch(app.session.hub, msg.DataCollectionMessage)
     use_glue_watch_close(app)
     data_collection = app.data_collection
-    viewer_index: Reactive[Optional[int]] = solara.use_reactive(None)
+    viewer_index: Reactive[Optional[int]] = solara.use_reactive(0 if app.viewers else None)
     show_error = solara.use_reactive(False)
     error_message = solara.use_reactive("")
 
@@ -172,8 +172,16 @@ def GlueApp(app: gj.JupyterApplication):
     requested_viewer_typename = solara.use_reactive("Scatter")
 
     view_type = solara.use_reactive("tabs")  # tabs, grid, mdi
-    mdi_layouts: Reactive[List[MdiWindow]] = solara.use_reactive([])
-    grid_layout: Reactive[List[Dict]] = solara.use_reactive([])
+
+    # Initialize layouts from any pre-existing viewers (e.g. from a restored session)
+    initial_grid = [{"h": 18, "i": str(i), "moved": False, "w": 12, "x": 0, "y": 12 * i}
+                    for i in range(len(app.viewers))]
+    initial_mdi = [{"title": TITLE_TRANSLATIONS.get(v.__class__.__name__, v.__class__.__name__),
+                    "width": 800, "height": 600}
+                   for v in app.viewers]
+
+    mdi_layouts: Reactive[List[MdiWindow]] = solara.use_reactive(initial_mdi)
+    grid_layout: Reactive[List[Dict]] = solara.use_reactive(initial_grid)
     mdi_header_size_index = solara.use_reactive(2)
 
     def add_data_viewer(type: str, data: glue.core.Data):
